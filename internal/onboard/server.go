@@ -88,7 +88,17 @@ type State struct {
 	LastProbe   *ProbeResult   `json:"last_probe,omitempty"`
 	Profile     string         `json:"profile"`
 	Port        int            `json:"port"`
+	Hostname    string         `json:"hostname,omitempty"`
 	Notice      string         `json:"-"` // transient one-shot message
+}
+
+// telemetryHostname is the host the car is told to stream to: State.Hostname, set in
+// step 6b, else the partner domain.
+func (st State) telemetryHostname() string {
+	if st.Hostname != "" {
+		return st.Hostname
+	}
+	return st.Domain
 }
 
 type Store struct {
@@ -363,6 +373,7 @@ type view struct {
 	Profile    string // saved profile, else the default
 	Profiles   []string
 	Estimate   enroll.Estimate
+	Hostname   string // telemetry hostname for step 6b
 	// RedirectURI offers Sign in with Tesla when set; Scopes is what it asks for.
 	RedirectURI string
 	Scopes      string
@@ -388,7 +399,8 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, notice string) {
 		prof = "balanced"
 	}
 	v.Profile = prof
-	v.Estimate = enroll.EstimateCost(enroll.Generate(prof, st.Domain, st.Port))
+	v.Hostname = st.telemetryHostname()
+	v.Estimate = enroll.EstimateCost(enroll.Generate(prof, v.Hostname, st.Port))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmpl.ExecuteTemplate(w, "index.html", v); err != nil {
 		s.log.Error("render", "err", err)
@@ -611,13 +623,16 @@ func (s *Server) saveEnrollment(w http.ResponseWriter, r *http.Request) {
 	profile := strings.TrimSpace(r.FormValue("profile"))
 	port, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("port")))
 	s.store.mu.Lock()
-	domain := s.store.st.Domain
+	if _, ok := r.PostForm["hostname"]; ok {
+		s.store.st.Hostname = strings.TrimSpace(r.PostFormValue("hostname"))
+	}
+	hostname := s.store.st.telemetryHostname()
 	s.store.st.Profile = profile
 	s.store.st.Port = port
 	_ = s.store.saveState()
 	s.store.mu.Unlock()
 
-	ftc := enroll.Generate(profile, domain, port)
+	ftc := enroll.Generate(profile, hostname, port)
 	ca, err := s.chain(r.FormValue("ca"))
 	if err != nil {
 		s.render(w, r, "✗ "+err.Error())

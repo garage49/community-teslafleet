@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- **One naming scheme for Home Assistant entities.** **Entity IDs change.** The gateway clears the old discovery topics itself, so Home Assistant deletes the old entities. Automations that use them need the new IDs.
+  - Fields without a curated entity were keyed by their Tesla name run together (`sensor.<car>_chargeenablerequest`), under `raw_<Field>` topics. They now follow the curated scheme: `charge_enable_request`, named "Charge enable request".
+  - Binary sensors are named for the thing, and the device class supplies the state words:
+    - `lock` ("Lock: Locked") replaces `locked` ("Locked: Unlocked").
+    - `sentry_mode` replaces `sentry`.
+    - `charge_cable` replaces `plugged_in`.
+    - `driver_seat` replaces `driver_present`.
+  - One entity per fact. `online`, `charging` and `at_home` are gone; use `state`, `charging_state` and the location tracker's zone. The sentry enum becomes `sentry_mode_state`. It, `soc_raw` and `charge_state_raw` are diagnostic and disabled by default.
+  - On every announce the gateway publishes an empty retained config to each retired topic.
 - **eco sends the car's state.** Fields that no category named fell into "diagnostic", which eco turns off, so eco never sent the odometer, sentry mode, seat belts or hazard lights, 47 fields in all. They are now a "state" category: eco sends each when it changes, at most every 5 minutes, and never resends it, which adds a few cents a month per car. Balanced and live keep their cadence. Enroll again (step 7) to apply it.
 - **Step 7 shows what Tesla answered.** Enrolling reported "sent" whatever Tesla said, so a car Tesla skipped, for example one without the key (`missing_key`), looked enrolled. Step 7 now shows how many cars took the config and each skipped car with its reason. With no car taken it reports a failure, and an answer in an unknown shape is shown as it came.
 - **The wizard enrolls the configured cars.** Step 7 enrolled every car on the account, so a gateway configured for some of them paid for streams from the others. With vehicles configured (`TGW_VINS`), it enrolls those that are on the account, and step 7 lists them; with none configured, every listed car, as before.

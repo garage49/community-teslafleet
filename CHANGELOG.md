@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **eco sends the car's state.** Fields that no category named fell into "diagnostic", which eco turns off, so eco never sent the odometer, sentry mode, seat belts or hazard lights, 47 fields in all. They are now a "state" category: eco sends each when it changes, at most every 5 minutes, and never resends it, which adds a few cents a month per car. Balanced and live keep their cadence. Enroll again (step 7) to apply it.
 - **Step 7 shows what Tesla answered.** Enrolling reported "sent" whatever Tesla said, so a car Tesla skipped, for example one without the key (`missing_key`), looked enrolled. Step 7 now shows how many cars took the config and each skipped car with its reason. With no car taken it reports a failure, and an answer in an unknown shape is shown as it came.
 - **The wizard enrolls the configured cars.** Step 7 enrolled every car on the account, so a gateway configured for some of them paid for streams from the others. With vehicles configured (`TGW_VINS`), it enrolls those that are on the account, and step 7 lists them; with none configured, every listed car, as before.
 - **Telemetry hostname in the wizard.** Step 6b told the car to stream to the partner domain. The public key is plain HTTPS and is often served through a tunnel, but no tunnel can carry the car's mutual TLS, so the telemetry server then needs another host under the same root domain. Step 6b now has a telemetry hostname field, which defaults to the domain.

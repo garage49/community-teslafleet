@@ -1,0 +1,21 @@
+# garage49 build farm (fork-only file; upstream's ci.yml and release.yml stay untouched and are disabled in
+# this repository's Actions settings). Rules: github.com/garage49/.github RULES.md.
+# main push    -> checks, gateway binary, snapshot image community-teslafleet:<next>-dev.N-g<sha> (internal registry)
+# pull request -> checks and binary on GitHub-hosted runners (public repository), nothing published
+# The fork cuts no releases: upstream's vX.Y.Z tags arrive with upstream, so snapshots are deployed by digest.
+name: build
+on:
+  push: { branches: [main], tags: ['v*'] }
+  pull_request: {}
+  workflow_dispatch: {}
+permissions: { contents: write, id-token: write }
+jobs:
+  build:
+    uses: garage49/.github/.github/workflows/go-build.yml@main
+    with:
+      name: gateway
+      package: ./cmd/gateway
+      version-file: ha-addon/config.yaml
+      docker-image: community-teslafleet
+      docker-context: deployment/docker
+      docker-smoke: docker run --rm "$IMAGE" -h

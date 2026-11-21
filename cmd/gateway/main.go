@@ -260,6 +260,7 @@ func main() {
 			CAFile:       cfg.Onboard.CAFile,
 			RedirectURI:  cfg.Onboard.RedirectURI,
 			Commands:     cfg.Commands.Enabled,
+			VINs:         vins,
 			ProxyTLS:     onboardProxyTLS(cfg.Commands, log),
 
 			DefaultProfile: cfg.Onboard.DefaultProfile,

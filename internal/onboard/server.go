@@ -17,6 +17,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -50,6 +51,9 @@ type Options struct {
 	// wizard offers Sign in with Tesla: Tesla sends the browser there after
 	// login, and the operator pastes that address back. The page need not exist.
 	RedirectURI string
+	// VINs are the cars the gateway is configured for. Step 7 enrolls those of
+	// them that are on the account; with none configured, every listed car.
+	VINs []string
 	// Commands is true when the command relay runs, so a sign-in also asks for
 	// the command scopes. Read-only, the token never holds them.
 	Commands bool
@@ -373,7 +377,8 @@ type view struct {
 	Profile    string // saved profile, else the default
 	Profiles   []string
 	Estimate   enroll.Estimate
-	Hostname   string // telemetry hostname for step 6b
+	Hostname   string         // telemetry hostname for step 6b
+	Enrolling  []teslaVehicle // the cars step 7 enrolls
 	// RedirectURI offers Sign in with Tesla when set; Scopes is what it asks for.
 	RedirectURI string
 	Scopes      string
@@ -400,6 +405,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, notice string) {
 	}
 	v.Profile = prof
 	v.Hostname = st.telemetryHostname()
+	v.Enrolling = s.enrolling(st.Vehicles)
 	v.Estimate = enroll.EstimateCost(enroll.Generate(prof, v.Hostname, st.Port))
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if err := s.tmpl.ExecuteTemplate(w, "index.html", v); err != nil {
@@ -669,12 +675,18 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.store.mu.Lock()
-	vins := make([]string, 0, len(s.store.st.Vehicles))
-	for _, v := range s.store.st.Vehicles {
+	listed := len(s.store.st.Vehicles)
+	cars := s.enrolling(s.store.st.Vehicles)
+	s.store.mu.Unlock()
+	vins := make([]string, 0, len(cars))
+	for _, v := range cars {
 		vins = append(vins, v.VIN)
 	}
-	s.store.mu.Unlock()
 	body, err := enroll.Wrap(payload, vins)
+	if errors.Is(err, enroll.ErrNoVINs) && listed > 0 {
+		s.render(w, r, "✗ None of the configured cars ("+strings.Join(s.opts.VINs, ", ")+") is on this account.")
+		return
+	}
 	if errors.Is(err, enroll.ErrNoVINs) {
 		s.render(w, r, "✗ No cars to enroll. Run \"List vehicles\" in step 6 first.")
 		return
@@ -693,6 +705,21 @@ func (s *Server) enroll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.render(w, r, "✓ Telemetry config sent. The car adopts it within a minute.")
+}
+
+// enrolling is the listed cars step 7 enrolls: the configured ones, or all
+// when none are configured.
+func (s *Server) enrolling(listed []teslaVehicle) []teslaVehicle {
+	if len(s.opts.VINs) == 0 {
+		return listed
+	}
+	out := make([]teslaVehicle, 0, len(listed))
+	for _, v := range listed {
+		if slices.Contains(s.opts.VINs, v.VIN) {
+			out = append(out, v)
+		}
+	}
+	return out
 }
 
 // chain returns the certificate chain for the enrollment config: the pasted

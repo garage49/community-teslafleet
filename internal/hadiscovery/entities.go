@@ -590,11 +590,11 @@ func coveredFields() map[string]bool {
 		store.FieldACChargingPower:   true, // charger_power
 		store.FieldDCChargingPower:   true, // charger_power
 		store.FieldIsClimateOn:       true, // climate_on
-		store.FieldSentryMode:      true, // sentry_mode / sentry_mode_state
-		store.FieldLocatedAtHome:   true, // not published: HA's zone defines home
+		store.FieldSentryMode:          true, // sentry_mode / sentry_mode_state
+		store.FieldLocatedAtHome:       true, // not published: HA's zone defines home
 		store.FieldChargePortDoorOpen: true, // charge_port cover
-		store.FieldChargePortLatch: true, // charge_cable
-		store.FieldChargingCableType:true, // charge_cable
+		store.FieldChargePortLatch:     true, // charge_cable
+		store.FieldChargingCableType:   true, // charge_cable
 		store.FieldHvacLeftTempReq:    true, // climate setpoint
 		store.FieldDoorState:         true, // doors composite
 		store.FieldTpmsHardWarnings:  true, // tpms warnings composite

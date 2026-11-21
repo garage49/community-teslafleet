@@ -1,0 +1,4 @@
+# Allow-list: only the binary the farm put here.
+*
+!docker-bin/
+!docker-bin/gateway

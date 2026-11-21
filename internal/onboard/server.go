@@ -33,15 +33,15 @@ type Options struct {
 	AuthPath   string
 	FleetAPI   string // regional Fleet API base (required for partner/vehicle/enroll calls)
 	ClientID   string // optional default from config (wizard can override)
-	// ClientSecret is the config's secret (TGW_TESLA_CLIENT_SECRET or its _FILE
-	// form), used when none was saved in the wizard, so it never has to be typed in.
-	ClientSecret string
 	ProxyURL   string // vehicle-command proxy (for enroll)
 	EnrollFile string // ftc.json path to POST on enroll
 	TokenCache string // where to persist the obtained refresh token (relay reads this)
 	CAFile     string // certificate chain for the telemetry server, used when none is pasted
 	// DefaultProfile preselects the enrollment profile until one is saved.
 	DefaultProfile string
+	// ClientSecret is the config's secret (TGW_TESLA_CLIENT_SECRET or its _FILE
+	// form), used when none was saved in the wizard, so it never has to be typed in.
+	ClientSecret string
 	// ProxyTLS verifies the vehicle-command proxy on enroll, the same way the
 	// command relay does. Nil means the system roots, never "skip".
 	ProxyTLS *tls.Config
